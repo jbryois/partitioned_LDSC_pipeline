@@ -1,0 +1,232 @@
+# How to run partitioned LDSC for any new annotation - Julien Bryois 5.10.2017 
+# Update to add gazal and tissue association analysis - 7.11.2017 
+# Update to increase speed and reduce memory usage v2 - 20.11.2017
+# Update to add continuous annotations - 21-22.11.2017
+# Update to add longleaf compatibility - 21.3.2019
+
+###########
+### !!! ### IF USING LONGLEAF -> USE SCRIPTS VERSIONS WITH "_longleaf" IN THEIR NAME !!!
+###########
+
+# Load modules
+module load ldsc/1.0.0 
+module load bedtools/2.25.0
+module load r/3.4.1
+
+# Copy the following scripts to the folder where you have your bed files (You can have many if you want to test many annotations)
+# You can either run the baseline model from Finucane et al., 2015, Gazal et al., 2017 or a Tissue association analysis like Finucane et al. 2015
+
+# Baseline model from Finucane et al. 2015
+
+On Killdevil:
+cp /nas02/home/j/b/jbryois/partitioned_LDSC/get_annotation_ldscores_v2.sh .
+cp /nas02/home/j/b/jbryois/partitioned_LDSC/get_annotation_ldscores_continuous_v2.sh .
+cp /nas02/home/j/b/jbryois/partitioned_LDSC/get_annotation_ldscores_continuous_no500ext_v2.sh .
+cp /nas02/home/j/b/jbryois/partitioned_LDSC/get_partitioned_h2_Finucane_v2.sh .
+
+On Longleaf:
+cp /nas02/home/j/b/jbryois/partitioned_LDSC/get_annotation_ldscores_v2_longleaf.sh .
+cp /nas02/home/j/b/jbryois/partitioned_LDSC/get_annotation_ldscores_continuous_v2_longleaf.sh .
+cp /nas02/home/j/b/jbryois/partitioned_LDSC/get_annotation_ldscores_continuous_no500ext_v2_longleaf.sh .
+cp /nas02/home/j/b/jbryois/partitioned_LDSC/get_partitioned_h2_Finucane_v2_longleaf.sh .
+
+# Baseline model from Gazal et al. 2017
+
+On Killdevil:
+cp /nas02/home/j/b/jbryois/partitioned_LDSC/get_annotation_ldscores_gazal_v2.sh .
+cp /nas02/home/j/b/jbryois/partitioned_LDSC/get_annotation_ldscores_gazal_continuous_v2.sh .
+cp /nas02/home/j/b/jbryois/partitioned_LDSC/get_annotation_ldscores_gazal_continuous_no500ext_v2.sh .
+cp /nas02/home/j/b/jbryois/partitioned_LDSC/get_partitioned_h2_Gazal_v2.sh .
+
+On Longleaf:
+cp /nas02/home/j/b/jbryois/partitioned_LDSC/get_annotation_ldscores_gazal_v2_longleaf.sh .
+cp /nas02/home/j/b/jbryois/partitioned_LDSC/get_annotation_ldscores_gazal_continuous_v2_longleaf.sh .
+cp /nas02/home/j/b/jbryois/partitioned_LDSC/get_annotation_ldscores_gazal_continuous_no500ext_v2_longleaf.sh .
+cp /nas02/home/j/b/jbryois/partitioned_LDSC/get_partitioned_h2_Gazal_v2_longleaf.sh .
+
+# Baseline model from Finucane et al. 2015 for tissue/cell type association analysis
+
+On Killdevil:
+cp /nas02/home/j/b/jbryois/partitioned_LDSC/get_annotation_ldscores_tissue_v2.sh .
+cp /nas02/home/j/b/jbryois/partitioned_LDSC/get_annotation_ldscores_tissue_continuous_v2.sh .
+cp /nas02/home/j/b/jbryois/partitioned_LDSC/get_partitioned_h2_tissue_v2.sh .
+cp /nas02/home/j/b/jbryois/partitioned_LDSC/get_tissue_pvalue.R .
+
+On Longleaf:
+cp /nas02/home/j/b/jbryois/partitioned_LDSC/get_annotation_ldscores_tissue_v2_longleaf.sh .
+cp /nas02/home/j/b/jbryois/partitioned_LDSC/get_annotation_ldscores_tissue_continuous_v2_longleaf.sh .
+cp /nas02/home/j/b/jbryois/partitioned_LDSC/get_partitioned_h2_tissue_v2_longleaf.sh .
+cp /nas02/home/j/b/jbryois/partitioned_LDSC/get_tissue_pvalue.R .
+
+###
+### Run the get_annotation_ldscores.sh script (~10-15 min per annotation)
+###
+
+## Finucane et al., 2015
+
+# If you want to estimate heritability enrichment of a particular region using the baseline model from (Finucane et al., 2015)
+# Do not to use if you want to compare the same annotation between multiple tissues
+
+# For bed files only
+
+On Killdevil:
+bsub -n 4 -R "span[hosts=1]" -o log_get_annot_ld_scores_finucane "sh get_annotation_ldscores_v2.sh"
+
+On Longleaf:
+sbatch -t 1:00:00 -n 4 -N 1 -o log_get_annot_ld_scores_finucane --wrap="sh get_annotation_ldscores_v2_longleaf.sh"
+
+
+# If Annotation is continuous (bed files, with column 5 representing the value of the annotation), run the following command instead:
+# This runs the Finucane baseline model and add a 500bp window around the continuous annotation. 
+# Unclear whether the 500bp window is relevant for continuous annotation (probably not since Gazal continuous annotations don't have a 500bp window).
+# See Script without the 500bp window below
+# SNPs in multiple overlapping annotation are dropped due to ambiguity
+
+# Continuous annotation and adds a 500bp window 
+
+On Killdevil:
+bsub -n 4 -R "span[hosts=1]" -o log_get_annot_ld_scores_continuous_finucane "sh get_annotation_ldscores_continuous_v2.sh"
+
+On Longleaf:
+sbatch -t 1:00:00 -n 4 -N 1 -o log_get_annot_ld_scores_continuous_finucane --wrap="sh get_annotation_ldscores_continuous_v2_longleaf.sh"
+
+# Continuous annotation without a 500bp window 
+
+On Killdevil:
+bsub -n 4 -R "span[hosts=1]" -o log_get_annot_ld_scores_continuous_no500ext_finucane "sh get_annotation_ldscores_continuous_no500ext_v2.sh"
+
+On Longleaf:
+sbatch -t 1:00:00 -n 4 -N 1 -o log_get_annot_ld_scores_continuous_no500ext_finucane --wrap="sh get_annotation_ldscores_continuous_no500ext_v2_longleaf.sh"
+
+## Gazal et al., 2017
+
+# If you want to estimate heritability enrichment of a particular region using the baseline model from (Gazal et al., 2017)
+# Do not to use if you want to compare the same annotation between multiple tissues
+# The following annotation are continuous and the heritability enrichment is not interpretable:
+# GERP.NS, MAF_Adj_LLD_AFR, Recomb_Rate_10kb, Nucleotide_Diversity_10kb, Backgrd_Selection_Stat, CpG_Content_50kb
+# -> use the coefficient z-score instead for these annotations for interpretation. Heritability enrichment for other annotations is ok.
+# See https://github.com/bulik/ldsc/wiki/Partitioned-Heritability-from-Continuous-Annotations
+
+On Killdevil:
+bsub -n 4 -R "span[hosts=1]" -o log_get_annot_ld_scores_gazal "sh get_annotation_ldscores_gazal_v2.sh"
+
+On Longleaf:
+sbatch -t 1:00:00 -n 4 -N 1 -o log_get_annot_ld_scores_gazal --wrap="sh get_annotation_ldscores_gazal_v2_longleaf.sh"
+
+# If Annotation is continuous (bed files, with column 5 representing the value of the annotation), run the following command instead:
+# This runs the Gazal baseline model and add a 500bp window around the continuous annotation. 
+# Unclear whether the 500bp window is relevant for continuous annotation (probably not since Gazal continuous annotations don't have a 500bp window).
+# See Script without the 500bp window below
+# SNPs in multiple overlapping annotation are dropped due to ambiguity
+
+# Continuous annotation and adds a 500bp window 
+
+On Killdevil:
+bsub -n 4 -R "span[hosts=1]" -o log_get_annot_ld_scores_continuous_gazal "sh get_annotation_ldscores_gazal_continuous_v2.sh"
+
+On Longleaf:
+sbatch -t 1:00:00 -n 4 -N 1 -o log_get_annot_ld_scores_continuous_gazal --wrap="sh get_annotation_ldscores_gazal_continuous_v2_longleaf.sh"
+
+# Continuous annotation without a 500bp window 
+
+On Killdevil:
+bsub -n 4 -R "span[hosts=1]" -o log_get_annot_ld_scores_continuous_no500ext_gazal "sh get_annotation_ldscores_gazal_continuous_no500ext_v2.sh"
+
+On Longleaf:
+sbatch -t 1:00:00 -n 4 -N 1 -o log_get_annot_ld_scores_continuous_no500ext_gazal --wrap="sh get_annotation_ldscores_gazal_continuous_no500ext_v2_longleaf.sh"
+
+
+## Tissue Analysis
+
+# If you want to compare the same annotation type (Ex: FIRE, top10% most specific genes, etc...) between different tissues using the baseline model from (Finucane et al., 2015)
+# Aim of analysis: Which tissue is the most associated with my trait?
+# You should compare the 10th column (Coefficient_z-score) and not the heritability enrichment using this analysis, Rscript to compute pvalue provided
+
+On Killdevil:
+bsub -n 4 -R "span[hosts=1]" -o log_get_annot_ld_scores_tissue "sh get_annotation_ldscores_tissue_v2.sh"
+
+On Longleaf:
+sbatch -t 1:00:00 -n 4 -N 1 -o log_get_annot_ld_scores_tissue --wrap="sh get_annotation_ldscores_tissue_v2_longleaf.sh"
+
+
+# If Annotation is continuous (bed files, with column 5 representing the value of the annotation), run the following command instead:
+# SNPs in multiple overlapping annotation are dropped due to ambiguity
+
+On Killdevil:
+bsub -n 4 -R "span[hosts=1]" -o log_get_annot_ld_scores_continuous_tissue "sh get_annotation_ldscores_tissue_continuous_v2.sh"
+
+On Longleaf:
+sbatch -t 1:00:00 -n 4 -N 1 -o log_get_annot_ld_scores_continuous_tissue --wrap="sh get_annotation_ldscores_tissue_continuous_v2_longleaf.sh"
+
+###
+### Get partitioned h2 for new annotations for phenotype of interest (~3-5min) using the baseline model from (Finucane et al., 2015)
+###
+
+# Load location of diverse GWAS sumstats
+source /nas/depts/007/sullilab/shared/gwas.ldsc/location.sumstats.sh
+
+#=== Only launch this after the ldscores were computed for all bed files!
+
+On Killdevil:
+bsub -n 4 -R "span[hosts=1]" -o log_get_partitioned_finucane_h2clozuk "sh get_partitioned_h2_Finucane_v2.sh $clozuk"
+bsub -n 4 -R "span[hosts=1]" -o log_get_partitioned_finucane_h2scz2   "sh get_partitioned_h2_Finucane_v2.sh $scz2"
+bsub -n 4 -R "span[hosts=1]" -o log_get_partitioned_finucane_h2scz3   "sh get_partitioned_h2_Finucane_v2.sh $scz3"
+
+On Longleaf:
+sbatch -t 1:00:00 -n 4 -N 1 -o log_get_partitioned_finucane_h2clozuk --wrap="sh get_partitioned_h2_Finucane_v2_longleaf.sh $clozuk"
+sbatch -t 1:00:00 -n 4 -N 1 -o log_get_partitioned_finucane_h2scz2   --wrap="sh get_partitioned_h2_Finucane_v2_longleaf.sh $scz2"
+sbatch -t 1:00:00 -n 4 -N 1 -o log_get_partitioned_finucane_h2scz3   --wrap="sh get_partitioned_h2_Finucane_v2_longleaf.sh $scz3"
+
+###
+### Get partitioned h2 for new annotations for phenotype of interest (~3-5min) using the baseline model from (Gazal et al., 2017)
+###
+
+# Load location of diverse GWAS sumstats
+source /nas/depts/007/sullilab/shared/gwas.ldsc/location.sumstats.sh
+
+#=== Only launch this after the ldscores were computed for all bed files!
+
+On Killdevil:
+bsub -n 4 -R "span[hosts=1]" -o log_get_partitioned_gazal_h2clozuk "sh get_partitioned_h2_Gazal_v2.sh $clozuk"
+bsub -n 4 -R "span[hosts=1]" -o log_get_partitioned_gazal_h2scz2   "sh get_partitioned_h2_Gazal_v2.sh $scz2"
+bsub -n 4 -R "span[hosts=1]" -o log_get_partitioned_gazal_h2scz3   "sh get_partitioned_h2_Gazal_v2.sh $scz3"
+
+On Longleaf:
+sbatch -t 1:00:00 -n 4 -N 1 -o log_get_partitioned_gazal_h2clozuk --wrap="sh get_partitioned_h2_Gazal_v2_longleaf.sh $clozuk"
+sbatch -t 1:00:00 -n 4 -N 1 -o log_get_partitioned_gazal_h2scz2   --wrap="sh get_partitioned_h2_Gazal_v2_longleaf.sh $scz2"
+sbatch -t 1:00:00 -n 4 -N 1 -o log_get_partitioned_gazal_h2scz3   --wrap="sh get_partitioned_h2_Gazal_v2_longleaf.sh $scz3"
+
+
+###
+### Get Z-score for new annotations for phenotype of interest (~3-5min) using the baseline model from (Finucane et al., 2015)
+### Used to compare the same annotation across multiple tissue to associate a tissue/cell type with trait
+### 
+
+# Load location of diverse GWAS sumstats
+source /nas/depts/007/sullilab/shared/gwas.ldsc/location.sumstats.sh
+
+#=== Only launch this after the ldscores were computed for all bed files!
+
+On Killdevil:
+bsub -n 4 -R "span[hosts=1]" -o log_get_partitioned_tissue_h2clozuk "sh get_partitioned_h2_tissue_v2.sh $clozuk"
+bsub -n 4 -R "span[hosts=1]" -o log_get_partitioned_tissue_h2scz2   "sh get_partitioned_h2_tissue_v2.sh $scz2"
+bsub -n 4 -R "span[hosts=1]" -o log_get_partitioned_tissue_h2scz3   "sh get_partitioned_h2_tissue_v2.sh $scz3"
+
+On Longleaf:
+sbatch -t 1:00:00 -n 4 -N 1 -o log_get_partitioned_tissue_h2clozuk --wrap="sh get_partitioned_h2_tissue_v2_longleaf.sh $clozuk"
+sbatch -t 1:00:00 -n 4 -N 1 -o log_get_partitioned_tissue_h2scz2   --wrap="sh get_partitioned_h2_tissue_v2_longleaf.sh $scz2"
+sbatch -t 1:00:00 -n 4 -N 1 -o log_get_partitioned_tissue_h2scz3   --wrap="sh get_partitioned_h2_tissue_v2_longleaf.sh $scz3"
+
+
+# Use the following R script to get a one-sided pvalue for tissue/cell type association using the 10th column
+# Text output is: tissue_pvalues.txt
+# Plot: tissue_plot.pdf
+
+On Killdevil:
+bsub -o log_get_pvalue_tissue "Rscript get_tissue_pvalue.R"
+bsub -o log_get_pvalue_tissue "Rscript get_tissue_pvalue_h2.R"
+
+On Longleaf:
+
+sbatch -t 1:00:00 -n 1 -o log_get_pvalue_tissue --wrap="Rscript get_tissue_pvalue.R"
+sbatch -t 1:00:00 -n 1 -o log_get_pvalue_tissue --wrap="Rscript get_tissue_pvalue_h2.R"

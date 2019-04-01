@@ -1,0 +1,65 @@
+# How to run partitioned LDSC for any new annotation - Julien Bryois 5.10.2017 - update 7.11.2017
+
+#Load modules
+module load ldsc/1.0.0 
+module load bedtools/2.25.0
+
+# Copy the following scripts to the folder where you have your bed files (You can have many if you want to test many annotations)
+
+cp /nas02/home/j/b/jbryois/partitioned_LDSC/get_annotation_ldscores.sh .
+cp /nas02/home/j/b/jbryois/partitioned_LDSC/get_annotation_ldscores_gazal.sh .
+cp /nas02/home/j/b/jbryois/partitioned_LDSC/get_annotation_ldscores_tissue.sh .
+cp /nas02/home/j/b/jbryois/partitioned_LDSC/get_partitioned_h2.sh .
+
+###
+### Run the get_annotation_ldscores.sh script (~15 min per annotation)
+###
+
+#If you want to estimate heritability enrichment of a particular region using the baseline model from (Finucane et al., 2015)
+#(do not to use if you want to compare same annotation between multiple tissues).
+
+bsub -n 4 -R "span[hosts=1]" -o log_get_annot_ld_scores "sh get_annotation_ldscores.sh"
+
+#If you want to estimate heritability enrichment of a particular region using the baseline model from (Gazal et al., 2017)
+#(do not to use if you want to compare same annotation between multiple tissues).
+#The following annotation are continuous and the heritability enrichment is not interpretable:
+#GERP.NS, MAF_Adj_LLD_AFR, Recomb_Rate_10kb, Nucleotide_Diversity_10kb, Backgrd_Selection_Stat, CpG_Content_50kb
+# -> use the coefficient z-score instead for these annotations for interpretation. Heritability enrichment for other annotation is ok.
+#See https://github.com/bulik/ldsc/wiki/Partitioned-Heritability-from-Continuous-Annotations
+
+bsub -n 4 -R "span[hosts=1]" -o log_get_annot_ld_scores_gazal "sh get_annotation_ldscores_gazal.sh"
+
+#If you want to compare the same annotation type (Ex: FIRE, top10% most specific genes, etc...) between different tissues using the baseline model from (Finucane et al., 2015)
+#Aim of analysis: Which tissue is the most associated with my trait?
+#(you should compare the 10th column (Coefficient_z-score) and not the heritability enrichment using this analysis)
+
+bsub -n 4 -R "span[hosts=1]" -o log_get_annot_ld_scores_tissue "sh get_annotation_ldscores_tissue.sh"
+
+###
+### Get paritioned h2 for new annotations for phenotype of interest (~3-5min)
+###
+
+#=== full path to sumstats to test (after munge)
+clozuk="/nas/depts/007/sullilab/shared/pgc/clozuk/clozuk.sumstats.gz"
+scz2="/nas/depts/007/sullilab/shared/pgc/scz2/ldsc/scz2.sumstats.gz"
+scz3="/nas/depts/007/sullilab/shared/pgc/scz3/ldsc/scz3.sumstats.gz"
+mdd2="/nas/depts/007/sullilab/shared/pgc/mdd2/ldsc/mdd2.sumstats.gz"
+bip2="/nas/depts/007/sullilab/shared/pgc/bip2/ldsc/bip2.sumstats.gz"
+iasd="/nas/depts/007/sullilab/shared/pgc/ipsych/iasd.sumstats.gz"
+iadd="/nas/depts/007/sullilab/shared/pgc/ipsych/iadd.sumstats.gz"
+insom="/nas/depts/007/sullilab/shared/pgc/other/insom.sumstats.gz"
+iq="/nas/depts/007/sullilab/shared/pgc/other/iq.sumstats.gz"
+
+#=== Only launch this after the ldscores were computed for all bed files!
+
+bsub -n 4 -R "span[hosts=1]" -o log_get_partitioned_h2clozuk "sh get_partitioned_h2.sh $clozuk"
+bsub -n 4 -R "span[hosts=1]" -o log_get_partitioned_h2scz2   "sh get_partitioned_h2.sh $scz2"
+bsub -n 4 -R "span[hosts=1]" -o log_get_partitioned_h2scz3   "sh get_partitioned_h2.sh $scz3"
+bsub -n 4 -R "span[hosts=1]" -o log_get_partitioned_h2mdd2   "sh get_partitioned_h2.sh $mdd2"
+bsub -n 4 -R "span[hosts=1]" -o log_get_partitioned_h2iasd   "sh get_partitioned_h2.sh $iasd"
+bsub -n 4 -R "span[hosts=1]" -o log_get_partitioned_h2iadd   "sh get_partitioned_h2.sh $iadd"
+bsub -n 4 -R "span[hosts=1]" -o log_get_partitioned_h2insom  "sh get_partitioned_h2.sh $insom"
+bsub -n 4 -R "span[hosts=1]" -o log_get_partitioned_h2iq     "sh get_partitioned_h2.sh $iq”
+
+#For the cell type/tissue comparison/continuous annotation, you should compare the 10th column (Coefficient_z-score)
+#In R, a one-sided pvalue can be obtained for the 10th column using the command: 1-pnorm(Coefficient_z-score)

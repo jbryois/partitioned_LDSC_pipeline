@@ -1,0 +1,36 @@
+# Julien Bryois - 4.10.2017
+# This script install the necessary files for partitioned LDSC
+
+wget https://data.broadinstitute.org/alkesgroup/LDSCORE/1000G_Phase3_weights_hm3_no_MHC.tgz 
+wget https://data.broadinstitute.org/alkesgroup/LDSCORE/w_hm3.snplist.bz2
+wget https://data.broadinstitute.org/alkesgroup/LDSCORE/1000G_Phase3_plinkfiles.tgz
+wget https://data.broadinstitute.org/alkesgroup/LDSCORE/1000G_Phase3_baseline_ldscores.tgz
+wget https://data.broadinstitute.org/alkesgroup/LDSCORE/1000G_Phase3_frq.tgz
+wget https://data.broadinstitute.org/alkesgroup/LDSCORE/1000G_Phase3_baselineLD_v1.1_ldscores.tgz
+
+tar -xvzf 1000G_Phase3_weights_hm3_no_MHC.tgz
+tar -xvzf 1000G_Phase3_plinkfiles.tgz
+tar -xvzf 1000G_Phase3_baseline_ldscores.tgz
+tar -xvzf 1000G_Phase3_frq.tgz
+tar -xvzf 1000G_Phase3_baselineLD_v1.1_ldscores.tgz
+
+tail -n +2 w_hm3.snplist | cut -f 1 > hm_snp.txt
+
+bunzip2 w_hm3.snplist.bz2
+
+#Get SNP position in bed format from LDSC 1000 genomes phase3 annotation file
+
+cd 1000G_EUR_Phase3_baseline
+for f in *.annot.gz
+do
+zcat $f | awk '{print "chr"$1"\t"$2"\t"$2"\t"$3}' >> ../1000genomes_phase3_SNPs.bed2
+done
+cd ..
+
+grep -v BP 1000genomes_phase3_SNPs.bed2 > 1000genomes_phase3_SNPs_2.bed
+mv 1000genomes_phase3_SNPs_2.bed 1000genomes_phase3_SNPs.bed2
+
+module load bedtools/2.26
+
+sortBed -i 1000genomes_phase3_SNPs.bed2 > 1000genomes_phase3_SNPs.sorted.bed2
+mv 1000genomes_phase3_SNPs.sorted.bed2 1000genomes_phase3_SNPs.bed2
