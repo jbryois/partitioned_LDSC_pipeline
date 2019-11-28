@@ -34,3 +34,10 @@ module load bedtools/2.26
 
 sortBed -i 1000genomes_phase3_SNPs.bed2 > 1000genomes_phase3_SNPs.sorted.bed2
 mv 1000genomes_phase3_SNPs.sorted.bed2 1000genomes_phase3_SNPs.bed2
+
+
+## Test cell type (22.11.2019)
+
+cts_name=Cahoy
+wget https://data.broadinstitute.org/alkesgroup/LDSCORE/LDSC_SEG_ldscores/${cts_name}_1000Gv3_ldscores.tgz
+tar -xvzf ${cts_name}_1000Gv3_ldscores.tgz
